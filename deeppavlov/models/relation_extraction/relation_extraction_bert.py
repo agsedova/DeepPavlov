@@ -22,7 +22,6 @@ class REBertModel(TorchModel):
             n_classes: int,
             num_ner_tags: int,
             model_name: str,
-            num_ner_tags: int = None,
             pretrained_bert: str = None,
             bert_config_file: Optional[str] = None,
             criterion: str = "CrossEntropyLoss",
