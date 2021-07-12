@@ -22,6 +22,7 @@ class REBertModel(TorchModel):
             n_classes: int,
             num_ner_tags: int,
             model_name: str,
+            num_ner_tags: int = None,
             pretrained_bert: str = None,
             bert_config_file: Optional[str] = None,
             criterion: str = "CrossEntropyLoss",
@@ -43,6 +44,11 @@ class REBertModel(TorchModel):
         self.hidden_keep_prob = hidden_keep_prob
         self.clip_norm = clip_norm
         self.threshold = threshold
+
+        if not num_ner_tags:
+            self.num_ner_tags = 6
+        else:
+            self.num_ner_tags = num_ner_tags
 
         if self.n_classes == 0:
             raise ConfigError("Please provide a valid number of classes.")
@@ -139,6 +145,7 @@ class REBertModel(TorchModel):
             n_classes=self.n_classes,
             pretrained_bert=self.pretrained_bert,
             bert_tokenizer_config_file=self.pretrained_bert,
+            num_ner_tags=self.num_ner_tags,
             device=self.device,
             ner_tags_length=self.num_ner_tags,
             threshold=self.threshold
