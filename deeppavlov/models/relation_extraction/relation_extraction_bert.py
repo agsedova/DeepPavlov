@@ -146,7 +146,6 @@ class REBertModel(TorchModel):
             bert_tokenizer_config_file=self.pretrained_bert,
             num_ner_tags=self.num_ner_tags,
             device=self.device,
-            ner_tags_length=self.num_ner_tags,
             threshold=self.threshold
         )
 
