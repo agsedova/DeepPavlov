@@ -20,6 +20,7 @@ class REBertModel(TorchModel):
     def __init__(
             self,
             n_classes: int,
+            num_ner_tags: int,
             model_name: str,
             pretrained_bert: str = None,
             bert_config_file: Optional[str] = None,
@@ -34,6 +35,7 @@ class REBertModel(TorchModel):
             **kwargs
     ):
         self.n_classes = n_classes
+        self.num_ner_tags = num_ner_tags
         self.pretrained_bert = pretrained_bert
         self.bert_config_file = bert_config_file
         self.return_probas = return_probas
@@ -67,7 +69,6 @@ class REBertModel(TorchModel):
         _input = {'labels': labels}
         for elem in ['input_ids', 'attention_mask']:
             inp_elem = [f[elem] for f in features]
-            print("length of input elem", len(inp_elem))
             _input[elem] = torch.LongTensor(inp_elem).to(self.device)
         for elem in ['entity_pos', 'ner_tags']:
             inp_elem = [f[elem] for f in features]
@@ -139,6 +140,7 @@ class REBertModel(TorchModel):
             pretrained_bert=self.pretrained_bert,
             bert_tokenizer_config_file=self.pretrained_bert,
             device=self.device,
+            ner_tags_length=self.num_ner_tags,
             threshold=self.threshold
         )
 

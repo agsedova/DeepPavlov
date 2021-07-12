@@ -27,6 +27,7 @@
         "in_y": ["y_ids"],
         "out": ["model_output"],
         "n_classes": 30,
+        "num_ner_tags": 29,
         "save_path": "{MODEL_PATH}/model",
         "load_path": "{MODEL_PATH}/model",
         "model_name": "re_model",
