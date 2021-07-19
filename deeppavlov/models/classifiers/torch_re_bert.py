@@ -71,15 +71,15 @@ class BertWithAdaThresholdLocContextPooling(nn.Module):
     ) -> Union[Tuple[Any, Tensor], Tuple[Tensor]]:
 
         if labels:
-            curr_threshold = None  # for training: no set threshold but adaptive one
+            curr_threshold = None       # for training: no set threshold but adaptive one
         else:
-            curr_threshold = self.threshold  # for development and test: threshold set in config
+            curr_threshold = self.threshold     # for development and test: threshold set in config
 
         output = self.model(input_ids=input_ids, attention_mask=attention_mask)
         sequence_output = output[0]  # Tensor (batch_size x input_length x 768)
         attention = output[-1][-1]  # Tensor (batch_size x 12 x input_length x input_length)
 
-        hs, rs, ts = self.get_hrt(sequence_output, attention, entity_pos)  # Tensors (batch_size x 768)
+        hs, rs, ts = self.get_hrt(sequence_output, attention, entity_pos)       # Tensors (batch_size x 768)
 
         # get ner tags of entities
         hs_ner_tags, ts_ner_tags = torch.Tensor([list(ele) for ele in list(zip(*ner_tags))]).to(self.device)
@@ -102,43 +102,40 @@ class BertWithAdaThresholdLocContextPooling(nn.Module):
         return output
 
     def get_hrt(self, sequence_output: Tensor, attention: Tensor, entity_pos: List) -> Tuple[Tensor, Tensor, Tensor]:
-        offset = 1
-        n, h, _, c = attention.size()
+        _, h, _, max_sequence_length = attention.size()
         hss, tss, rss = [], [], []
-        for i in range(len(entity_pos)):  # for each training sample (= doc)
+        for i in range(len(entity_pos)):            # for each training sample (= doc)
             entity_embs, entity_atts = [], []
-            for e in entity_pos[i]:  # for each entity (= list of entity mentions)
+            for e in entity_pos[i]:             # for each entity (= list of entity mentions)
                 if len(e) > 1:
                     e_emb, e_att = [], []
-                    for start, end in e:  # for start and end position of each mention
-                        if start + offset < c:
-                            # In case the entity mention is truncated due to limited max seq length.
-                            e_emb.append(sequence_output[i, start + offset])
-                            e_att.append(attention[i, :, start + offset])
+                    for start, end in e:        # for start and end position of each mention
+                        # skip the entity pair if the entity mention is truncated due to limited max seq length.
+                        if start + 1 < max_sequence_length:
+                            e_emb.append(sequence_output[i, start + 1])
+                            e_att.append(attention[i, :, start + 1])
                     if len(e_emb) > 0:
                         e_emb = torch.logsumexp(torch.stack(e_emb, dim=0), dim=0)
                         e_att = torch.stack(e_att, dim=0).mean(0)
                     else:
                         e_emb = torch.zeros(self.hidden_size).to(sequence_output)
-                        e_att = torch.zeros(h, c).to(attention)
+                        e_att = torch.zeros(h, max_sequence_length).to(attention)
                 else:
                     start, end = e[0]
-                    if start + offset < c:
-                        e_emb = sequence_output[i, start + offset]
-                        e_att = attention[i, :, start + offset]
+                    if start + 1 < max_sequence_length:
+                        e_emb = sequence_output[i, start + 1]
+                        e_att = attention[i, :, start + 1]
                     else:
                         e_emb = torch.zeros(self.hidden_size).to(sequence_output)
-                        e_att = torch.zeros(h, c).to(attention)
-                entity_embs.append(e_emb)  # get an embedding of an entity
-                entity_atts.append(e_att)  # get attention of an entity
+                        e_att = torch.zeros(h, max_sequence_length).to(attention)
+                entity_embs.append(e_emb)           # get an embedding of an entity
+                entity_atts.append(e_att)       # get attention of an entity
 
             entity_embs = torch.stack(entity_embs, dim=0)  # [n_e, d]           # entity embeddings for each document
             entity_atts = torch.stack(entity_atts, dim=0)  # [n_e, h, seq_len]
 
             hs = torch.index_select(entity_embs, 0, torch.tensor([0]).to(self.device))  # embeddings of the first entity
-            ts = torch.index_select(            # embeddings of the second entity
-                entity_embs, 0, torch.tensor([1]).to(self.device)
-            )
+            ts = torch.index_select(entity_embs, 0, torch.tensor([1]).to(self.device)) # embeddings of the second entity
 
             h_att = torch.index_select(entity_atts, 0, torch.tensor([0]).to(self.device))
             t_att = torch.index_select(entity_atts, 0, torch.tensor([1]).to(self.device))

@@ -20,8 +20,8 @@ class REBertModel(TorchModel):
     def __init__(
             self,
             n_classes: int,
-            num_ner_tags: int,
             model_name: str,
+            num_ner_tags: int,
             pretrained_bert: str = None,
             bert_config_file: Optional[str] = None,
             criterion: str = "CrossEntropyLoss",
@@ -43,11 +43,6 @@ class REBertModel(TorchModel):
         self.hidden_keep_prob = hidden_keep_prob
         self.clip_norm = clip_norm
         self.threshold = threshold
-
-        if not num_ner_tags:
-            self.num_ner_tags = 6
-        else:
-            self.num_ner_tags = num_ner_tags
 
         if self.n_classes == 0:
             raise ConfigError("Please provide a valid number of classes.")
@@ -120,6 +115,11 @@ class REBertModel(TorchModel):
         with torch.no_grad():
             indices, probas = self.model(**_input)
 
+        out = open("log_pred.txt", 'a')
+        out.write(str(indices) + "\n")
+        out.write(str(probas) + "\n")
+        out.close()
+
         if self.return_probas:
             pred = probas.cpu().numpy()
             pred[np.isnan(pred)] = 0
@@ -173,8 +173,8 @@ if __name__ == "__main__":
     #
     # labels = [data[1] for data in data_iter_out.train]
 
-    features_processed = load("/Users/asedova/PycharmProjects/05_deeppavlov_fork/docred/out_transformer_preprocessor/dev_small")
-    labels = [data[1] for data in data_iter_out.train][:len(features_processed)]
+    features_processed = load("/Users/asedova/PycharmProjects/05_deeppavlov_fork/docred/out_transformer_preprocessor/dev_small")[:50]
+    labels = [data[1] for data in data_iter_out.train][:50]
 
     # from DeepPavlov.deeppavlov.core.data.simple_vocab import SimpleVocabulary
     # smplvoc = SimpleVocabulary(
@@ -190,4 +190,5 @@ if __name__ == "__main__":
         load_path="/Users/asedova/Documents/04_deeppavlov/deeppavlov_fork/DocRED/out_model/model",
         pretrained_bert="bert-base-uncased",
         model_name="re_model",
+        num_ner_tags=6
     ).train_on_batch(features_processed, labels)
