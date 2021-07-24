@@ -26,11 +26,11 @@
         "in": ["input_x_bert"],
         "in_y": ["y_ids"],
         "out": ["model_output"],
+        "n_classes": 30,
+        "num_ner_tags": 29,
         "save_path": "{MODEL_PATH}/model",
         "load_path": "{MODEL_PATH}/model",
         "model_name": "re_model",
-        "n_classes": 30,
-        "num_ner_tags": 29,
         "pretrained_bert": "{TRANSFORMER}"
       },
       {
@@ -47,8 +47,8 @@
   "train": {
     "epochs": 50,
     "batch_size": 16,
-    "train_metrics": ["acc"],
-    "metrics": ["acc"],
+    "train_metrics": ["f1_weighted", "acc"],
+    "metrics": ["f1_weighted", "acc"],
     "validation_patience": 50,
     "val_every_n_batches": 100,
     "log_every_n_batches": 100,
