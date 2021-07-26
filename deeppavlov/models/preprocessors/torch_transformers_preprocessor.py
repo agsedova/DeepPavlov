@@ -341,11 +341,6 @@ class TorchTransformersREPreprocessor(Component):
         self.ner2id = {tag: tag_id for tag_id, tag in enumerate(ner_tags)}
         self.max_seq_length = max_seq_length
 
-        out = open("log.txt", 'a')
-        out.write(f"Number of tags: {len(self.ner2id)}" + '\n')
-        out.write(f"Tags are: {self.ner2id}" + '\n')
-        out.close()
-
         if Path(vocab_file).is_file():
             vocab_file = str(expand_path(vocab_file))
             self.tokenizer = BertTokenizer(vocab_file=vocab_file, do_lower_case=do_lower_case)
@@ -357,7 +352,7 @@ class TorchTransformersREPreprocessor(Component):
         tokens, entity_info = zip(*input_info)
 
         """
-        Tokenize and create masks; recalculate the entity positions reagrding the document boarders.
+        Tokenize and create masks; recalculate the entity positions regarding the document boarders.
         Args:
             tokens: List of tokens of each document: List[List[tokens in doc]]
             entity_info: List of information about entities containing in the document:

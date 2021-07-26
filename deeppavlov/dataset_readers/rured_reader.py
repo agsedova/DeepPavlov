@@ -4,6 +4,7 @@ import random
 from typing import Dict, List, Tuple
 from pathlib import Path
 from logging import getLogger
+from colour import Color
 from overrides import overrides
 import matplotlib.pyplot as plt
 
@@ -18,7 +19,11 @@ class RuREDDatasetReader(DatasetReader):
     """ Class to read the datasets in RuRED format"""
 
     @overrides
-    def read(self, data_path: str, rel2id: Dict = None) -> Dict[str, List[Tuple]]:
+    def read(
+            self,
+            data_path: str,
+            rel2id: Dict = None
+    ) -> Dict[str, List[Tuple]]:
 
         data_path = Path(data_path).resolve()
 
@@ -44,7 +49,13 @@ class RuREDDatasetReader(DatasetReader):
 
         data = {"train": train_data, "valid": dev_data, "test": test_data}
 
-        self.draw_plot()
+        self.ner_stat = dict(list(reversed(sorted(self.ner_stat.items(), key=lambda item: item[1]))))
+        red = Color("red")
+        colors = list(red.range_to(Color("blue"), len(self.ner_stat)))
+        colors = [color.rgb for color in colors]
+        plt.bar(self.ner_stat.keys(), self.ner_stat.values(), color=colors)
+        plt.xticks(rotation=270)
+        plt.show()
 
         return data
 
@@ -138,15 +149,7 @@ class RuREDDatasetReader(DatasetReader):
         relation[label] = 1
         return relation
 
-    def draw_plot(self) -> None:
-        """ Make plots with NER tags """
-        ner_stat_sorted = dict(list(reversed(sorted(self.ner_stat.items(), key=lambda item: item[1]))))
-        plt.bar(ner_stat_sorted.keys(), ner_stat_sorted.values())
-        plt.xticks(rotation=270)
-        plt.show()
-
-    @staticmethod
-    def add_default_rel_dict():
+    def add_default_rel_dict(self):
         """ Creates a default relation to relation if dictionary with RuRED relations """
         return dict(no_relation=0, MEMBER=1, WORKS_AS=2, WORKPLACE=3, OWNERSHIP=4, SUBORDINATE_OF=5, TAKES_PLACE_IN=6,
                     EVENT_TAKES_PART_IN=7, SELLS_TO=8, ALTERNATIVE_NAME=9, HEADQUARTERED_IN=10, PRODUCES=11,

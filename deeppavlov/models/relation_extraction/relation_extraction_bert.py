@@ -123,6 +123,16 @@ class REBertModel(TorchModel):
         if self.return_probas:
             pred = probas.cpu().numpy()
             pred[np.isnan(pred)] = 0
+            new_pred = []
+            for elem in pred:
+                elem[0] = 0.0
+                new_pred.append(elem)
+            new_pred = np.argmax(new_pred, axis=1)
+            one_hot = [[0.0 for i in range(97)] for _ in new_pred]
+            for i in range(len(new_pred)):
+                one_hot[i][new_pred[i]] = 1.0
+            one_hot = np.array(one_hot)
+            pred = one_hot
             out = open("log_infer.txt", "a+")
             out.write("\n" + f"Probas: {pred}" + "\n")
             out.close()

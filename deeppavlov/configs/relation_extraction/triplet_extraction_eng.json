@@ -3,45 +3,47 @@
     "in": ["x"],
     "pipe": [
       {
+        "class_name": "ner_chunker",
         "batch_size": 16,
         "in": ["x"],
-        "out": ["x_chunk", "chunk_nums", "chunk_sentences_offsets", "chunk_sentences"]
+        "out": ["text_batch_list", "nums_batch_list", "sentences_offsets_batch_list", "sentences_batch_list"]
       },
       {
+        "class_name": "entity_detection_parser",
         "thres_proba": 0.05,
         "o_tag": "O",
         "tags_file": "{NER_PATH}/tag.dict",
         "return_entities_with_tags": true,
-        "class_name": "entity_detection_parser",
         "id": "edp"
       },
       {
-         "class_name": "kbqa_entity_linker",
+        "class_name": "kbqa_entity_linker",
         "id": "linker_entities",
-        "load_path": "{DOWNLOADS_PATH}/wikidata_rus",
-        "inverted_index_filename": "inverted_index_rus.pickle",
-        "entities_list_filename": "entities_list_rus.pickle",
-        "q2name_filename": "wiki_rus_q_to_name.pickle",
+        "load_path": "{DOWNLOADS_PATH}/wikidata_eng",
+        "inverted_index_filename": "inverted_index_eng.pickle",
+        "entities_list_filename": "entities_list.pickle",
+        "q2name_filename": "wiki_eng_q_to_name.pickle",
         "build_inverted_index": false,
-        "lemmatize": true,
+        "lemmatize": false,
         "use_descriptions": false,
         "include_mention": false,
         "use_prefix_tree": false,
-        "lang": "ru"
+        "lang": "en"
       },
       {
         "class_name": "ner_chunk_model",
-        "ner": {"config_path": "{CONFIGS_PATH}/ner/ner_rured.json"},
+        "ner": {"config_path": "{CONFIGS_PATH}/ner/ner_ontonotes_bert.json"},
         "ner_parser": "#edp",
-        "in": ["x_chunk", "chunk_nums", "chunk_sentences_offsets", "chunk_sentences"],
+        "in": ["text_batch_list", "nums_batch_list", "sentences_offsets_batch_list", "sentences_batch_list"],
         "out": ["entity_substr", "entity_offsets", "tags", "probas", "sentences_offsets", "sentences", "tokens", "entity_positions", "sentences_tokens"]
       },
       {
         "class_name": "triplet_extractor",
-         "re_model": {"config_path": "{CONFIGS_PATH}/relation_extraction/re_docred.json"},
-         "el_model": "#linker_entities",
-         "in": ["entity_substr", "entity_offsets", "tags", "probas", "sentences_offsets", "sentences", "tokens", "entity_positions", "sentences_tokens"],
-         "out": ["triplets"]
+        "re_model": {"config_path": "{CONFIGS_PATH}/relation_extraction/re_docred.json"},
+        "el_model": "#linker_entities",
+        "ner_tags": ["ORG", "TIME", "MISC", "LOC", "PER", "NUM"],
+        "in": ["entity_substr", "entity_offsets", "tags", "probas", "sentences_offsets", "sentences", "tokens", "entity_positions", "sentences_tokens"],
+        "out": ["triplets"]
       }
     ],
     "out": ["triplets"]
