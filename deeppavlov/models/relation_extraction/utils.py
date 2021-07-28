@@ -1,5 +1,4 @@
 import numpy as np
-import pickle
 from deeppavlov.core.common.registry import register
 from deeppavlov.core.common.file import read_json
 from deeppavlov.core.commands.utils import expand_path

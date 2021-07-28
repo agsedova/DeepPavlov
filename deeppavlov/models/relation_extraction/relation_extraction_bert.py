@@ -28,6 +28,7 @@ class REBertModel(TorchModel):
             optimizer: str = "AdamW",
             optimizer_parameters: Dict = {"lr": 5e-5, "weight_decay": 0.01, "eps": 1e-6},
             return_probas: bool = False,
+            num_out_relations: int = 1,
             attention_probs_keep_prob: Optional[float] = None,
             hidden_keep_prob: Optional[float] = None,
             clip_norm: Optional[float] = None,
@@ -39,6 +40,7 @@ class REBertModel(TorchModel):
         self.pretrained_bert = pretrained_bert
         self.bert_config_file = bert_config_file
         self.return_probas = return_probas
+        self.num_out_relations = num_out_relations
         self.attention_probs_keep_prob = attention_probs_keep_prob
         self.hidden_keep_prob = hidden_keep_prob
         self.clip_norm = clip_norm
@@ -127,21 +129,19 @@ class REBertModel(TorchModel):
             for elem in pred:
                 elem[0] = 0.0
                 new_pred.append(elem)
-            new_pred = np.argmax(new_pred, axis=1)
-            one_hot = [[0.0 for i in range(97)] for _ in new_pred]
-            for i in range(len(new_pred)):
-                one_hot[i][new_pred[i]] = 1.0
-            one_hot = np.array(one_hot)
-            pred = one_hot
-            out = open("log_infer.txt", "a+")
-            out.write("\n" + f"Probas: {pred}" + "\n")
-            out.close()
+            # derive relations: = classes with #self.num_out_relations max probabilities
+            pred_rel = [pred.argsort()[-self.num_out_relations:][::-1].tolist() for pred in new_pred]
+            # encode derived relations as one-hot vectors
+            one_hot_vectors = []
+            for i in range(len(pred_rel)):
+                curr_vector = [0.0] * self.n_classes
+                for pred in pred_rel[i]:
+                    curr_vector[pred] = 1.0
+                one_hot_vectors.append(curr_vector)
+            pred = np.array(one_hot_vectors)
         else:
             pred = indices.cpu().numpy()
             pred[np.isnan(pred)] = 0
-            out = open("log_infer.txt", "a+")
-            out.write("\n" + f"Not Probas: {pred}" + "\n")
-            out.close()
         return pred
 
     def re_model(self, **kwargs) -> nn.Module:
@@ -184,8 +184,8 @@ if __name__ == "__main__":
     #
     # labels = [data[1] for data in data_iter_out.train]
 
-    features_processed = load("/Users/asedova/PycharmProjects/05_deeppavlov_fork/docred/out_transformer_preprocessor/dev_small")[:50]
-    labels = [data[1] for data in data_iter_out.train][:50]
+    features_processed = load("/Users/asedova/PycharmProjects/05_deeppavlov_fork/docred/out_transformer_preprocessor/dev_small")[:5]
+    labels = [data[1] for data in data_iter_out.train][:5]
 
     # from DeepPavlov.deeppavlov.core.data.simple_vocab import SimpleVocabulary
     # smplvoc = SimpleVocabulary(
@@ -195,11 +195,22 @@ if __name__ == "__main__":
     # smplvoc.fit(data["labels"])
     # labels_enc = smplvoc.__call__(data["labels"])
 
+    # REBertModel(
+    #     n_classes=n_classes,
+    #     save_path="/Users/asedova/Documents/04_deeppavlov/deeppavlov_fork/DocRED/out_model/model",
+    #     load_path="/Users/asedova/Documents/04_deeppavlov/deeppavlov_fork/DocRED/out_model/model",
+    #     pretrained_bert="bert-base-uncased",
+    #     model_name="re_model",
+    #     num_ner_tags=6
+    # ).train_on_batch(features_processed, labels)
+
     REBertModel(
         n_classes=n_classes,
         save_path="/Users/asedova/Documents/04_deeppavlov/deeppavlov_fork/DocRED/out_model/model",
         load_path="/Users/asedova/Documents/04_deeppavlov/deeppavlov_fork/DocRED/out_model/model",
         pretrained_bert="bert-base-uncased",
         model_name="re_model",
-        num_ner_tags=6
-    ).train_on_batch(features_processed, labels)
+        num_ner_tags=6,
+        return_probas=True,
+        num_out_relations=3
+    ).__call__(features_processed)

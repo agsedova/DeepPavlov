@@ -268,19 +268,17 @@ class TripletExtractor(Component):
             triplets_list = []
             for (subj_substr, obj_substr), (subj_ids, obj_ids), re_res in \
                     zip(entities_samples_substr, entities_samples_ids, re_res_list):
-                if re_res[0] not in {"Na", "no_relation", "no relation"}:
-                    rel_id, rel_label = re_res[0]
-                else:
-                    rel_id, rel_label = re_res[1]
-                if subj_ids:
-                    subj_id = subj_ids[0]
-                else:
-                    subj_id = "not_in_wiki"
-                if obj_ids:
-                    obj_id = obj_ids[0]
-                else:
-                    obj_id = "not_in_wiki"
-                triplets_list.append([[subj_substr, rel_label, obj_substr], [subj_id, rel_id, obj_id]])
+                for relation in re_res:
+                    rel_id, rel_label = relation
+                    if subj_ids:
+                        subj_id = subj_ids[0]
+                    else:
+                        subj_id = "not_in_wiki"
+                    if obj_ids:
+                        obj_id = obj_ids[0]
+                    else:
+                        obj_id = "not_in_wiki"
+                    triplets_list.append([[subj_substr, rel_label, obj_substr], [subj_id, rel_id, obj_id]])
 
             triplets_batch.append(triplets_list)
         return triplets_batch

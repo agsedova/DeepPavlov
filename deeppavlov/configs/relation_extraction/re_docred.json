@@ -29,7 +29,8 @@
         "n_classes": 97,
         "num_ner_tags": 6,
         "pretrained_bert": "bert-base-uncased",
-        "return_probas": true
+        "return_probas": true,
+        "num_out_relations": 3
       },
       {
         "class_name": "re_postprocessor",
