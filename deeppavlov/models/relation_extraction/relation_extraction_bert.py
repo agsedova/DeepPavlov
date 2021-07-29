@@ -157,38 +157,3 @@ class REBertModel(TorchModel):
         attention_mask = torch.tensor([f["attention_mask"] for f in batch], dtype=torch.float)
         out = (input_ids, attention_mask, entity_pos, ner_tags, label)
         return out
-
-
-if __name__ == "__main__":
-    from joblib import load
-    from deeppavlov.dataset_iterators.basic_classification_iterator import BasicClassificationDatasetIterator
-    from deeppavlov.models.preprocessors.torch_transformers_preprocessor import TorchTransformersREPreprocessor
-    n_classes = 97
-
-    data_iter_out = BasicClassificationDatasetIterator(load(
-        "/Users/asedova/PycharmProjects/05_deeppavlov_fork/docred/out_dataset_reader_without_neg/all_data"
-    ))
-    # features = [data[0] for data in data_iter_out.train]
-    # features_processed = TorchTransformersREPreprocessor("bert-base-cased").__call__(features)
-    #
-    # labels = [data[1] for data in data_iter_out.train]
-
-    features_processed = load("/Users/asedova/PycharmProjects/05_deeppavlov_fork/docred/out_transformer_preprocessor/dev_small")[:50]
-    labels = [data[1] for data in data_iter_out.train][:50]
-
-    # from DeepPavlov.deeppavlov.core.data.simple_vocab import SimpleVocabulary
-    # smplvoc = SimpleVocabulary(
-    #     save_path="/Users/asedova/Documents/04_deeppavlov/deeppavlov_fork/DocRED/out_transformer_preprocessor/"
-    #               "dev_small_labels_enc",
-    # )
-    # smplvoc.fit(data["labels"])
-    # labels_enc = smplvoc.__call__(data["labels"])
-
-    REBertModel(
-        n_classes=n_classes,
-        save_path="/Users/asedova/Documents/04_deeppavlov/deeppavlov_fork/DocRED/out_model/model",
-        load_path="/Users/asedova/Documents/04_deeppavlov/deeppavlov_fork/DocRED/out_model/model",
-        pretrained_bert="bert-base-uncased",
-        model_name="re_model",
-        num_ner_tags=6
-    ).train_on_batch(features_processed, labels)

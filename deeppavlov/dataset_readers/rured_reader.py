@@ -149,7 +149,7 @@ class RuREDDatasetReader(DatasetReader):
         relation[label] = 1
         return relation
 
-    def add_default_rel_dict(self):
+    def add_default_rel_dict(self) -> Dict:
         """ Creates a default relation to relation if dictionary with RuRED relations """
         return dict(no_relation=0, MEMBER=1, WORKS_AS=2, WORKPLACE=3, OWNERSHIP=4, SUBORDINATE_OF=5, TAKES_PLACE_IN=6,
                     EVENT_TAKES_PART_IN=7, SELLS_TO=8, ALTERNATIVE_NAME=9, HEADQUARTERED_IN=10, PRODUCES=11,
@@ -157,10 +157,3 @@ class RuREDDatasetReader(DatasetReader):
                     NUMBER_OF_EMPLOYEES_FIRED=17, ORIGINS_FROM=18, ACQUINTANCE_OF=19, PARENT_OF=20, ORGANIZES=21,
                     FOUNDED_BY=22, PLACE_RESIDES_IN=23, BORN_IN=24, AGE_IS=25, RELATIVE=26, NUMBER_OF_EMPLOYEES=27,
                     SIBLING=28, DATE_OF_BIRTH=29)
-
-
-# todo: wil be deleted
-if __name__ == "__main__":
-    RuREDDatasetReader().read(
-        "/Users/asedova/PycharmProjects/05_deeppavlov_fork/rured"
-    )

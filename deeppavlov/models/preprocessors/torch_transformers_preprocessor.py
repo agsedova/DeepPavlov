@@ -486,18 +486,3 @@ class TorchTransformersREPreprocessor(Component):
             ner_tag_one_hot[self.ner2id[ner_tag]] = 1
             enc_ner_tags.append(ner_tag_one_hot)
         return enc_ner_tags
-
-
-# todo: wil be deleted
-if __name__ == "__main__":
-    from joblib import load
-    from deeppavlov.dataset_iterators.basic_classification_iterator import BasicClassificationDatasetIterator
-
-    data = load(
-        "/Users/asedova/PycharmProjects/05_deeppavlov_fork/docred/out_dataset_reader_without_neg/all_data"
-    )
-    data_iter_out = BasicClassificationDatasetIterator(data)
-    entity_info = [data[0] for data in data_iter_out.test]
-    labels = [data[1] for data in data_iter_out.test]
-
-    TorchTransformersREPreprocessor("bert-base-cased").__call__(entity_info)
