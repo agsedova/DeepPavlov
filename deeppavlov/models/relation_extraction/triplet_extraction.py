@@ -201,6 +201,10 @@ class TripletExtractor(Component):
         self.re_batch_size = re_batch_size
         self.ner_tags = ner_tags
 
+        # todo: will be replaced later with the real dicts, dummy ones for now
+        self.rel_id2ent_types = {}   # {str: List[Tuple]}: correspondence between the relation and allowed entity types
+        self.ent_id2ent_types = {}   # {str : str}: correspondence between the entity id and entity's type
+
     def __call__(self, entity_substr_batch, entity_offsets_batch, tags_batch, probas_batch, sentences_offsets_batch,
                  sentences_batch, tokens_batch, entity_positions_batch, sentences_tokens_batch):
 
@@ -278,10 +282,48 @@ class TripletExtractor(Component):
                         obj_id = obj_ids[0]
                     else:
                         obj_id = "not_in_wiki"
-                    triplets_list.append([[subj_substr, rel_label, obj_substr], [subj_id, rel_id, obj_id]])
+
+                    # check whether the extracted triple is valid (= the entity types are allowed for this relation)
+                    triplet_valid = self.if_triplet_validity(subj_id, rel_id, obj_id)
+
+                    if triplet_valid:
+                        triplets_list.append([[subj_substr, rel_label, obj_substr], [subj_id, rel_id, obj_id]])
+                    else:
+                        continue
 
             triplets_batch.append(triplets_list)
         return triplets_batch
+
+    def if_triplet_validity(self, subj_id: str, rel_id: str, obj_id: str) -> bool:
+        """
+        Check whether the triple is valid according to entity types, i.e. the entity types pair is allowed for this
+        relation
+        Args:
+            subj_id: id of the subject entity
+            rel_id: id of the relation
+            obj_id: id of the object entity
+        Returns:
+            True if triplet is valid, False otherwise
+        """
+        try:
+            subj_type = self.ent_id2ent_types[subj_id]
+        except KeyError:
+            return False
+
+        try:
+            obj_type = self.ent_id2ent_types[obj_id]
+        except KeyError:
+            return False
+
+        try:
+            valid_types = self.rel_id2ent_types[rel_id]
+        except KeyError:
+            return False
+
+        if (subj_type, obj_type) in valid_types or (obj_type, subj_type) in valid_types:
+            return True
+        else:
+            return False
 
     def substitute_ner_tags(self, tags_batch: List[List[str]]) -> List[List[str]]:
         """
