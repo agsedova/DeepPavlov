@@ -43,14 +43,16 @@
         "el_model": "#linker_entities",
         "ner_tags": ["ORG", "TIME", "MISC", "LOC", "PER", "NUM"],
         "in": ["entity_substr", "entity_offsets", "tags", "probas", "sentences_offsets", "sentences", "tokens", "entity_positions", "sentences_tokens"],
-        "out": ["triplets"]
+        "out": ["triplets"],
+        "rel_types_filename": "{DOWNLOADS_PATH}/wikidata/rel_types.pickle",
+        "wiki_filename": "{DOWNLOADS_PATH}/wikidata/wikidata_lite.hdt"
       }
     ],
     "out": ["triplets"]
   },
   "metadata": {
     "variables": {
-      "ROOT_PATH": "~/.deeppavlov",
+      "ROOT_PATH": "/archive/evseev/.deeppavlov",
       "DOWNLOADS_PATH": "{ROOT_PATH}/downloads",
       "MODELS_PATH": "{ROOT_PATH}/models",
       "CONFIGS_PATH": "{DEEPPAVLOV_PATH}/configs",
@@ -64,6 +66,18 @@
       {
         "url": "http://files.deeppavlov.ai/kbqa/wikidata/wiki_eng_files.tar.gz",
         "subdir": "{DOWNLOADS_PATH}/wikidata_eng"
+      },
+      {
+        "url": "http://files.deeppavlov.ai/kbqa/wikidata/wikidata_lite.hdt",
+        "subdir": "{DOWNLOADS_PATH}/wikidata"
+      },
+      {
+        "url": "http://files.deeppavlov.ai/kbqa/wikidata/wikidata_lite.hdt.index.v1-1",
+        "subdir": "{DOWNLOADS_PATH}/wikidata"
+      },
+      {
+        "url": "http://files.deeppavlov.ai/deeppavlov_data/relation_extraction/rel_types.pickle",
+        "subdir": "{DOWNLOADS_PATH}/wikidata"
       }
     ]
   }

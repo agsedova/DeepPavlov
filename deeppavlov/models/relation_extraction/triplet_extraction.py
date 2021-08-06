@@ -17,10 +17,13 @@ import time
 from logging import getLogger
 from typing import Tuple, List
 
+from deeppavlov.core.commands.utils import expand_path
 from deeppavlov.core.common.chainer import Chainer
+from deeppavlov.core.common.file import load_pickle
 from deeppavlov.core.common.registry import register
 from deeppavlov.core.models.component import Component
 from deeppavlov.models.kbqa.entity_detection_parser import EntityDetectionParser
+from deeppavlov.models.kbqa.wiki_parser import WikiParser
 
 log = getLogger(__name__)
 
@@ -194,16 +197,21 @@ class NerChunkModel(Component):
 
 @register('triplet_extractor')
 class TripletExtractor(Component):
-    def __init__(self, re_model, el_model=None, sliding_window_size=1, re_batch_size=16, ner_tags: List = None, **kwargs):
+    def __init__(self, re_model, el_model=None, rel_types_filename: str = None, wiki_filename: str = None,
+                 sliding_window_size: int = 1, re_batch_size: int = 16, ner_tags: List[str] = None, **kwargs):
         self.el_model = el_model
         self.re_model = re_model
         self.sliding_window_size = sliding_window_size
         self.re_batch_size = re_batch_size
         self.ner_tags = ner_tags
 
-        # todo: will be replaced later with the real dicts, dummy ones for now
-        self.rel_id2ent_types = {}   # {str: List[Tuple]}: correspondence between the relation and allowed entity types
-        self.ent_id2ent_types = {}   # {str : str}: correspondence between the entity id and entity's type
+        self.rel_id2ent_types = {}  # {str: List[Tuple]}: correspondence between the relation and allowed entity types
+        self.wikidata = {}  # {str : str}: correspondence between the entity id and entity's type
+
+        if rel_types_filename:
+            self.rel_id2ent_types = load_pickle(expand_path(rel_types_filename))
+        if wiki_filename:
+            self.wikidata = WikiParser(wiki_filename)
 
     def __call__(self, entity_substr_batch, entity_offsets_batch, tags_batch, probas_batch, sentences_offsets_batch,
                  sentences_batch, tokens_batch, entity_positions_batch, sentences_tokens_batch):
@@ -216,7 +224,7 @@ class TripletExtractor(Component):
         triplets_batch = []
         for entity_substr_list, entity_ids_list, entity_offsets_list, tags_list, probas_list, sentences_offsets_list, \
             sentences_list, tokens_list, entity_positions_list, sentences_tokens_list in \
-                zip(entity_substr_batch, entity_ids_batch, entity_offsets_batch, tags_batch, probas_batch, \
+                zip(entity_substr_batch, entity_ids_batch, entity_offsets_batch, tags_batch, probas_batch,
                     sentences_offsets_batch, sentences_batch, tokens_batch, entity_positions_batch,
                     sentences_tokens_batch):
             used_entity_pairs = set()
@@ -284,7 +292,7 @@ class TripletExtractor(Component):
                         obj_id = "not_in_wiki"
 
                     # check whether the extracted triple is valid (= the entity types are allowed for this relation)
-                    triplet_valid = self.if_triplet_validity(subj_id, rel_id, obj_id)
+                    triplet_valid = self.if_triplet_valid(subj_id, rel_id, obj_id)
 
                     if triplet_valid:
                         triplets_list.append([[subj_substr, rel_label, obj_substr], [subj_id, rel_id, obj_id]])
@@ -294,7 +302,7 @@ class TripletExtractor(Component):
             triplets_batch.append(triplets_list)
         return triplets_batch
 
-    def if_triplet_validity(self, subj_id: str, rel_id: str, obj_id: str) -> bool:
+    def if_triplet_valid(self, subj_id: str, rel_id: str, obj_id: str) -> bool:
         """
         Check whether the triple is valid according to entity types, i.e. the entity types pair is allowed for this
         relation
@@ -306,24 +314,29 @@ class TripletExtractor(Component):
             True if triplet is valid, False otherwise
         """
         try:
-            subj_type = self.ent_id2ent_types[subj_id]
+            subj_types = self.wikidata(["find_types"], [subj_id])
         except KeyError:
             return False
 
         try:
-            obj_type = self.ent_id2ent_types[obj_id]
+            obj_types = self.wikidata(["find_types"], [obj_id])
         except KeyError:
             return False
 
         try:
-            valid_types = self.rel_id2ent_types[rel_id]
+            valid_types_info = self.rel_id2ent_types[rel_id]
         except KeyError:
             return False
 
-        if (subj_type, obj_type) in valid_types or (obj_type, subj_type) in valid_types:
-            return True
-        else:
-            return False
+        if subj_types and obj_types:
+            for subj_type in subj_types[0]:
+                for obj_type in obj_types[0]:
+                    if "pairs" in valid_types_info and (subj_type, obj_type) in valid_types_info["pairs"] or \
+                            "subj" in valid_types_info and subj_type in valid_types_info["subj"] or \
+                            "obj" in valid_types_info and obj_type in valid_types_info["obj"]:
+                        return True
+
+        return False
 
     def substitute_ner_tags(self, tags_batch: List[List[str]]) -> List[List[str]]:
         """
@@ -350,7 +363,7 @@ class TripletExtractor(Component):
                         tags_corrected.append("TIME")
                     elif ner_tag in ["PERCENT", "MONEY", "QUANTITY", "ORDINAL", "CARDINAL"] and "NUM" in self.ner_tags:
                         tags_corrected.append("NUM")
-                    else:           # ["PRODUCT", "EVENT", "WORK OF ART", "LANGUAGE", "LAW"]
+                    else:  # ["PRODUCT", "EVENT", "WORK OF ART", "LANGUAGE", "LAW"]
                         tags_corrected.append("MISC")
             tags_batch_corrected.append(tags_corrected)
         return tags_batch_corrected
